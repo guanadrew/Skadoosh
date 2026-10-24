@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A sad little face and a slowly rising sea of rock hands.">
+  <title>😔 🤘</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: #faf8f4; }
+    .emoji { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; user-select: none; }
+    #hands { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+    .hand { position: absolute; line-height: 1; }
+    .center { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
+    .face { display: block; font-size: clamp(100px, 18vw, 180px); line-height: 1.2; animation: sigh 4.5s ease-in-out infinite; }
+    @keyframes sigh {
+      0%, 100% { transform: translateY(0) rotate(-5deg) scale(1); }
+      50% { transform: translateY(12px) rotate(4deg) scale(.96); }
+    }
+    @media (prefers-reduced-motion: reduce) { .face { animation: none; } }
+  </style>
+</head>
+<body>
+  <div id="hands" aria-hidden="true"></div>
+  <main class="center" aria-label="A sad face surrounded by a growing sea of rock hands">
+    <span class="emoji face" role="img" aria-label="Pensive face">😔</span>
+  </main>
+  <script>
+    const hands = document.getElementById('hands');
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let timer;
+    let generation = 0;
+
+    function fillPage() {
+      clearTimeout(timer);
+      generation++;
+      const currentGeneration = generation;
+      hands.replaceChildren();
+
+      const width = innerWidth;
+      const height = innerHeight;
+      const size = Math.max(48, Math.min(76, width / 12));
+      const spacing = size * .68;
+      const columns = Math.ceil(width / spacing) + 1;
+      const rows = Math.ceil(height / spacing) + 1;
+      const slots = [];
+
+      // Spread outward from the center, gradually occupying the whole screen.
+      for (let row = 0; row < rows; row++) {
+        for (let column = 0; column < columns; column++) {
+          const x = column * spacing + (row % 2 ? spacing / 2 : 0);
+          const y = row * spacing;
+          slots.push({ x, y, distance: Math.hypot((x - width / 2) / width, (y - height / 2) / height) + Math.random() * .22 });
+        }
+      }
+      slots.sort((a, b) => a.distance - b.distance);
+      let count = 0;
+
+      function release() {
+        if (currentGeneration !== generation) return;
+        const slot = slots[count];
+        const hand = document.createElement('span');
+        hand.className = 'emoji hand';
+        hand.textContent = '🤘';
+        const rotation = Math.random() * 36 - 18;
+        hand.style.cssText = `left:${slot.x - size / 2}px;top:${slot.y - size / 2}px;font-size:${size}px;transform:rotate(${rotation}deg)`;
+        hands.append(hand);
+
+        const startX = width / 2 + (Math.random() - .5) * width * .6;
+        hand.animate([
+          { opacity: 0, transform: `translate(${startX - slot.x}px, ${height + size - slot.y}px) rotate(${rotation - 25}deg)` },
+          { opacity: 1, offset: .15 },
+          { opacity: 1, transform: `translate(0, 0) rotate(${rotation}deg)` }
+        ], {
+          duration: reducedMotion.matches ? 1 : 6000 + Math.random() * 4000,
+          easing: 'cubic-bezier(.22,.65,.3,1)',
+          fill: 'backwards'
+        });
+
+        count++;
+        if (count < slots.length) {
+          timer = setTimeout(release, Math.max(55, 750 * Math.exp(-count / 45)));
+        }
+      }
+      timer = setTimeout(release, 1800);
+    }
+
+    fillPage();
+    let resizeTimer;
+    addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(fillPage, 250);
+    });
+  </script>
+</body>
+</html>
